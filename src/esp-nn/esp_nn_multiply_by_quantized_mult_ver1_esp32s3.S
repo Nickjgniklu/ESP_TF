@@ -1,3 +1,4 @@
+#ifdef ARCH_ESP32_S3
 // Copyright 2021-2022 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -150,3 +151,5 @@ esp_nn_multiply_by_quantized_mult_ver1_esp32s3:    # 0x1ee
     retw.n                          # [92]
 
     .size   esp_nn_multiply_by_quantized_mult_ver1_esp32s3, . - esp_nn_multiply_by_quantized_mult_ver1_esp32s3
+
+#endif

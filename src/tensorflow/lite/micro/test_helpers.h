@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_TEST_HELPERS_H_
 #define TENSORFLOW_LITE_MICRO_TEST_HELPERS_H_
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 #include "flatbuffers/flatbuffers.h"  // from @flatbuffers
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 #include "tensorflow/lite/portable_type_to_tflitetype.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -32,6 +35,7 @@ namespace tflite {
 namespace testing {
 
 constexpr int kOfflinePlannerHeaderSize = 3;
+using TestingOpResolver = tflite::MicroMutableOpResolver<10>;
 
 struct NodeConnection_ {
   std::initializer_list<int32_t> input;
@@ -55,8 +59,8 @@ class SimpleStatefulOp {
   };
 
  public:
-  static const TfLiteRegistration_V1* getRegistration();
-  static TfLiteRegistration_V1* GetMutableRegistration();
+  static const TFLMRegistration* getRegistration();
+  static TFLMRegistration* GetMutableRegistration();
   static void* Init(TfLiteContext* context, const char* buffer, size_t length);
   static TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node);
   static TfLiteStatus Invoke(TfLiteContext* context, TfLiteNode* node);
@@ -64,8 +68,8 @@ class SimpleStatefulOp {
 
 class MockCustom {
  public:
-  static const TfLiteRegistration_V1* getRegistration();
-  static TfLiteRegistration_V1* GetMutableRegistration();
+  static const TFLMRegistration* getRegistration();
+  static TFLMRegistration* GetMutableRegistration();
   static void* Init(TfLiteContext* context, const char* buffer, size_t length);
   static void Free(TfLiteContext* context, void* buffer);
   static TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node);
@@ -78,8 +82,8 @@ class MockCustom {
 // the sum of the inputs.
 class MultipleInputs {
  public:
-  static const TfLiteRegistration_V1* getRegistration();
-  static TfLiteRegistration_V1* GetMutableRegistration();
+  static const TFLMRegistration* getRegistration();
+  static TFLMRegistration* GetMutableRegistration();
   static void* Init(TfLiteContext* context, const char* buffer, size_t length);
   static void Free(TfLiteContext* context, void* buffer);
   static TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node);
@@ -91,8 +95,8 @@ class MultipleInputs {
 // A simple no-op operator.
 class NoOp {
  public:
-  static const TfLiteRegistration_V1* getRegistration();
-  static TfLiteRegistration_V1* GetMutableRegistration();
+  static const TFLMRegistration* getRegistration();
+  static TFLMRegistration* GetMutableRegistration();
   static void* Init(TfLiteContext* context, const char* buffer, size_t length);
   static void Free(TfLiteContext* context, void* buffer);
   static TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node);
@@ -102,7 +106,7 @@ class NoOp {
 };
 
 // Returns an Op Resolver that can be used in the testing code.
-AllOpsResolver GetOpResolver();
+TfLiteStatus GetTestingOpResolver(TestingOpResolver& op_resolver);
 
 // Returns a simple example flatbuffer TensorFlow Lite model. Contains 1 input,
 // 1 layer of weights, 1 output Tensor, and 1 operator.
@@ -192,7 +196,7 @@ void PopulateContext(TfLiteTensor* tensors, int tensors_size,
 
 // Create a TfLiteIntArray from an array of ints.  The first element in the
 // supplied array must be the size of the array expressed as an int.
-TfLiteIntArray* IntArrayFromInts(int* int_array);
+TfLiteIntArray* IntArrayFromInts(const int* int_array);
 
 // Create a TfLiteFloatArray from an array of floats.  The first element in the
 // supplied array must be the size of the array expressed as a float.
@@ -216,7 +220,6 @@ TfLiteTensor CreateTensor(const T* data, TfLiteIntArray* dims,
   result.is_variable = is_variable;
   result.allocation_type = kTfLiteMemNone;
   result.data.data = const_cast<T*>(data);
-  result.quantization = {kTfLiteAffineQuantization, nullptr};
   result.bytes = ElementCount(*dims) * sizeof(T);
   result.data.data = const_cast<T*>(data);
 
@@ -298,7 +301,7 @@ TfLiteTensor CreateSymmetricPerChannelQuantizedTensor(
 // Returns the number of tensors in the default subgraph for a tflite::Model.
 size_t GetModelTensorCount(const Model* model);
 
-// Derives the quantization scaling factor from a min and max range.
+// Derives the asymmetric quantization scaling factor from a min and max range.
 template <typename T>
 inline float ScaleFromMinMax(const float min, const float max) {
   return (max - min) /
@@ -306,11 +309,24 @@ inline float ScaleFromMinMax(const float min, const float max) {
                             std::numeric_limits<T>::min());
 }
 
+// Derives the symmetric quantization scaling factor from a min and max range.
+template <typename T>
+inline float SymmetricScaleFromMinMax(const float min, const float max) {
+  const int32_t kScale =
+      std::numeric_limits<typename std::make_signed<T>::type>::max();
+  const float range = std::max(std::abs(min), std::abs(max));
+  if (range == 0) {
+    return 1.0f;
+  } else {
+    return range / kScale;
+  }
+}
+
 // Derives the quantization zero point from a min and max range.
 template <typename T>
 inline int ZeroPointFromMinMax(const float min, const float max) {
   return static_cast<int>(std::numeric_limits<T>::min()) +
-         static_cast<int>(-min / ScaleFromMinMax<T>(min, max) + 0.5f);
+         static_cast<int>(roundf(-min / ScaleFromMinMax<T>(min, max)));
 }
 
 }  // namespace testing

@@ -1,3 +1,4 @@
+#ifdef ARCH_ESP32_S3
 // Copyright 2021-2022 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "esp_nn_multiply_by_quantized_mult_esp32s3.S"
-
     .text
     .literal_position
-//    .literal  .nudge_val, 1073741824
+    .literal  .nudge_val, 1073741824
 
     # Program Unit: esp_nn_conv_s8_mult8_1x1_esp32s3
     .type   esp_nn_conv_s8_mult8_1x1_esp32s3, @function
@@ -486,3 +485,5 @@ esp_nn_conv_s8_mult8_1x1_esp32s3:  # 0xdbc
     j   .process_leftover
 
     .size   esp_nn_conv_s8_mult8_1x1_esp32s3, . - esp_nn_conv_s8_mult8_1x1_esp32s3
+
+#endif

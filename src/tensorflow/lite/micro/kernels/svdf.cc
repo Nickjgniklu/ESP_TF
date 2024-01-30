@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ limitations under the License.
 namespace tflite {
 namespace {
 
-void* Init(TfLiteContext* context, const char* buffer, size_t length) {
+void* InitSvdf(TfLiteContext* context, const char* buffer, size_t length) {
   TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
   return context->AllocatePersistentBuffer(context, sizeof(OpDataSvdf));
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus EvalSvdf(TfLiteContext* context, TfLiteNode* node) {
   auto* params = reinterpret_cast<TfLiteSVDFParams*>(node->builtin_data);
   TFLITE_DCHECK(node->user_data != nullptr);
   const OpDataSvdf& data = *(static_cast<const OpDataSvdf*>(node->user_data));
@@ -48,6 +48,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       tflite::micro::GetEvalInput(context, node, kSvdfWeightsFeatureTensor);
   const TfLiteEvalTensor* weights_time =
       tflite::micro::GetEvalInput(context, node, kSvdfWeightsTimeTensor);
+  // TODO(#1751): account for optional bias tensor
   const TfLiteEvalTensor* bias =
       (NumInputs(node) == 5)
           ? tflite::micro::GetEvalInput(context, node, kSvdfBiasTensor)
@@ -62,7 +63,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       EvalFloatSvdfReference(
           context, node, input, weights_feature, weights_time, bias, params,
           data.scratch_tensor_index, activation_state, output);
-      return kTfLiteOk;
       break;
     }
 
@@ -72,14 +72,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
           EvalInt16SvdfReference(context, node, input, weights_feature,
                                  weights_time, bias, params, activation_state,
                                  output, data);
-          return kTfLiteOk;
           break;
         }
         case kTfLiteInt8: {
           EvalInt8SvdfReference(context, node, input, weights_feature,
                                 weights_time, bias, params, activation_state,
                                 output, data);
-          return kTfLiteOk;
           break;
         }
         default:
@@ -87,6 +85,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                       TfLiteTypeGetName(weights_time->type));
           return kTfLiteError;
       }
+      break;
     }
 
     default:
@@ -99,8 +98,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration_V1 Register_SVDF() {
-  return tflite::micro::RegisterOp(Init, PrepareSvdf, Eval);
+TFLMRegistration Register_SVDF() {
+  return tflite::micro::RegisterOp(InitSvdf, PrepareSvdf, EvalSvdf);
 }
 
 }  // namespace tflite

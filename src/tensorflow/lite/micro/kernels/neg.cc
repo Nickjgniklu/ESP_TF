@@ -27,7 +27,7 @@ namespace {
 constexpr int kInputTensor = 0;
 constexpr int kOutputTensor = 0;
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus NegEval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* input =
       tflite::micro::GetEvalInput(context, node, kInputTensor);
   TfLiteEvalTensor* output =
@@ -50,8 +50,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration_V1 Register_NEG() {
-  return tflite::micro::RegisterOp(nullptr, nullptr, Eval);
+TFLMRegistration Register_NEG() {
+  return tflite::micro::RegisterOp(nullptr, nullptr, NegEval);
 }
 
 }  // namespace tflite

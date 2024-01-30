@@ -533,7 +533,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   return context->AllocatePersistentBuffer(context, sizeof(OpData));
 }
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus ComparisonsPrepare(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(node->user_data != nullptr);
   OpData* data = static_cast<OpData*>(node->user_data);
 
@@ -579,28 +579,28 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration_V1 Register_EQUAL() {
-  return tflite::micro::RegisterOp(Init, Prepare, EqualEval);
+TFLMRegistration Register_EQUAL() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, EqualEval);
 }
 
-TfLiteRegistration_V1 Register_NOT_EQUAL() {
-  return tflite::micro::RegisterOp(Init, Prepare, NotEqualEval);
+TFLMRegistration Register_NOT_EQUAL() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, NotEqualEval);
 }
 
-TfLiteRegistration_V1 Register_GREATER() {
-  return tflite::micro::RegisterOp(Init, Prepare, GreaterEval);
+TFLMRegistration Register_GREATER() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, GreaterEval);
 }
 
-TfLiteRegistration_V1 Register_GREATER_EQUAL() {
-  return tflite::micro::RegisterOp(Init, Prepare, GreaterEqualEval);
+TFLMRegistration Register_GREATER_EQUAL() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, GreaterEqualEval);
 }
 
-TfLiteRegistration_V1 Register_LESS() {
-  return tflite::micro::RegisterOp(Init, Prepare, LessEval);
+TFLMRegistration Register_LESS() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, LessEval);
 }
 
-TfLiteRegistration_V1 Register_LESS_EQUAL() {
-  return tflite::micro::RegisterOp(Init, Prepare, LessEqualEval);
+TFLMRegistration Register_LESS_EQUAL() {
+  return tflite::micro::RegisterOp(Init, ComparisonsPrepare, LessEqualEval);
 }
 
 }  // namespace tflite
