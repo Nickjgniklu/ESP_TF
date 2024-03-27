@@ -27,7 +27,7 @@ namespace {
 constexpr int kInputTensor = 0;
 constexpr int kOutputTensor = 0;
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus CeilPrepare(TfLiteContext* context, TfLiteNode* node) {
   MicroContext* micro_context = GetMicroContext(context);
 
   TfLiteTensor* input =
@@ -50,7 +50,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus CeilEval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* input =
       tflite::micro::GetEvalInput(context, node, kInputTensor);
   TfLiteEvalTensor* output =
@@ -66,8 +66,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration_V1 Register_CEIL() {
-  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
+TFLMRegistration Register_CEIL() {
+  return tflite::micro::RegisterOp(nullptr, CeilPrepare, CeilEval);
 }
 
 }  // namespace tflite

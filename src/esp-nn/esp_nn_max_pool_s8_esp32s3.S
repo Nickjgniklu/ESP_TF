@@ -1,3 +1,4 @@
+#ifdef ARCH_ESP32_S3
 // Copyright 2021-2022 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -436,3 +437,5 @@ esp_nn_max_pool_s8_esp32s3: # 0x4
     retw.n                          # [0] // exit
 
     .size   esp_nn_max_pool_s8_esp32s3, . - esp_nn_max_pool_s8_esp32s3
+
+#endif

@@ -67,7 +67,7 @@ TfLiteStatus SplitImpl(TfLiteContext* context, TfLiteNode* node,
   return kTfLiteOk;
 }
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus SplitPrepare(TfLiteContext* context, TfLiteNode* node) {
   MicroContext* micro_context = GetMicroContext(context);
   TfLiteTensor* axis = micro_context->AllocateTempInputTensor(node, 0);
   TF_LITE_ENSURE(context, axis != nullptr);
@@ -82,7 +82,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus SplitEval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* axis = tflite::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 1);
 
@@ -118,8 +118,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration_V1 Register_SPLIT() {
-  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
+TFLMRegistration Register_SPLIT() {
+  return tflite::micro::RegisterOp(nullptr, SplitPrepare, SplitEval);
 }
 
 }  // namespace tflite
