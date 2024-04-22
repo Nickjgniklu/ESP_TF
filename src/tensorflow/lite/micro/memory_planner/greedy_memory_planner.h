@@ -111,6 +111,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
   // after invocation. Do to the fact that tensors that tensor data for tensors
   // that aren't being used during a phase of invocation are overwritten.
   bool preserves_all_tensors() const override { return false; }
+  TF_LITE_REMOVE_VIRTUAL_DELETE
+
 
  private:
   // Whether a buffer is active in a given time range.
@@ -162,7 +164,6 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
   // Whether buffers have been added since the last plan was calculated.
   bool need_to_calculate_offsets_;
 
-  TF_LITE_REMOVE_VIRTUAL_DELETE
 };
 
 }  // namespace tflite

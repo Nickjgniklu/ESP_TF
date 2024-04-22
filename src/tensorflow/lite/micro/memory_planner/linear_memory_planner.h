@@ -38,6 +38,7 @@ class LinearMemoryPlanner : public MicroMemoryPlanner {
   // Returns True because the LinearMemoryPlanner preserves all tensors after
   // invocation.
   bool preserves_all_tensors() const override { return true; }
+  TF_LITE_REMOVE_VIRTUAL_DELETE
 
  private:
   static constexpr int kMaxBufferCount = 1024;
@@ -45,7 +46,6 @@ class LinearMemoryPlanner : public MicroMemoryPlanner {
   int current_buffer_count_;
   size_t next_free_offset_;
 
-  TF_LITE_REMOVE_VIRTUAL_DELETE
 };
 
 }  // namespace tflite

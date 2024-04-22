@@ -21,7 +21,6 @@ limitations under the License.
 #include <complex>
 #include <limits>
 #include <memory>
-
 #ifndef TF_LITE_STATIC_MEMORY
 #include <string>
 
