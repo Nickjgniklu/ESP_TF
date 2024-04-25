@@ -21,7 +21,8 @@ limitations under the License.
 #include <complex>
 #include <limits>
 #include <memory>
-#ifndef TF_LITE_STATIC_MEMORY
+
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 #include <string>
 
 #include "tensorflow/lite/array.h"
@@ -151,7 +152,7 @@ const TfLiteTensor* GetOptionalInputTensor(const TfLiteContext* context,
   return GetInput(context, node, index);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 TfLiteTensor* GetTemporary(TfLiteContext* context, const TfLiteNode* node,
                            int index) {
   const int tensor_index = ValidateTensorIndexing(
@@ -413,7 +414,7 @@ bool HaveSameShapes(const TfLiteTensor* input1, const TfLiteTensor* input2) {
   return TfLiteIntArrayEqual(input1->dims, input2->dims);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 TfLiteStatus GetOutputShapeFromInput(TfLiteContext* context,
                                      const TfLiteTensor* input,
                                      TfLiteIntArray** output_shape) {
@@ -580,7 +581,7 @@ bool IsMobilePlatform() {
 }
 
 bool HasUnspecifiedDimension(const TfLiteTensor* tensor) {
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
   if (tensor->dims_signature) {
     for (int i : TfLiteIntArrayView(tensor->dims_signature)) {
       if (i == -1) return true;

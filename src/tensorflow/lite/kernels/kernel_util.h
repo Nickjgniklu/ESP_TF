@@ -18,7 +18,7 @@ limitations under the License.
 #include <stdint.h>
 
 #include <limits>
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 #include <string>
 #endif  // TF_LITE_STATIC_MEMORY
 
@@ -100,7 +100,7 @@ TfLiteStatus GetOutputSafe(const TfLiteContext* context, const TfLiteNode* node,
 const TfLiteTensor* GetOptionalInputTensor(const TfLiteContext* context,
                                            const TfLiteNode* node, int index);
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 // Note: You must check if result is not null:
 //
 //   TfLiteTensor* my_tensor = GetTemporary(context, node, kMyTensorIdx);
@@ -162,7 +162,7 @@ inline int NumOutputs(const TfLiteNode* node) {
   return node->outputs == nullptr ? 0 : node->outputs->size;
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 inline int NumIntermediates(const TfLiteNode* node) {
   return node->intermediates->size;
 }
@@ -214,7 +214,7 @@ inline bool IsConstantOrPersistentTensor(const TfLiteTensor* tensor) {
 inline bool IsDynamicTensor(const TfLiteTensor* tensor) {
   return tensor->allocation_type == kTfLiteDynamic;
 }
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 // Sets tensor to dynamic.
 inline void SetTensorToDynamic(TfLiteTensor* tensor) {
   if (tensor->allocation_type != kTfLiteDynamic) {
@@ -302,7 +302,7 @@ void CalculateActivationRange(TfLiteFusedActivation activation,
 // Return true if the given tensors have the same shape.
 bool HaveSameShapes(const TfLiteTensor* input1, const TfLiteTensor* input2);
 
-#if !defined(TF_LITE_STATIC_MEMORY)
+#if defined(TF_LITE_NOT_STATIC_MEMORY)
 // Gets the output shape from the input tensor.
 TfLiteStatus GetOutputShapeFromInput(TfLiteContext* context,
                                      const TfLiteTensor* input,

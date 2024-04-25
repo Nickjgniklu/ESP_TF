@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/core/c/common.h"
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 #include <cstdlib>
 #endif  // TF_LITE_STATIC_MEMORY
 
@@ -67,7 +67,7 @@ int TfLiteVarArrayEqual(const T* const a, const T* const b) {
   return TfLiteVarArrayEqualsArray(a, b->size, b->data);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 
 template <class T>
 T* TfLiteVarArrayCreate(const int size) {
@@ -119,7 +119,7 @@ int TfLiteIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
   return TfLiteVarArrayEqualsArray(a, b_size, b_data);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 
 TfLiteIntArray* TfLiteIntArrayCreate(int size) {
   return TfLiteVarArrayCreate<TfLiteIntArray>(size);
@@ -137,7 +137,7 @@ int TfLiteFloatArrayGetSizeInBytes(int size) {
   return TfLiteVarArrayGetSizeInBytes<TfLiteFloatArray>(size);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 
 TfLiteFloatArray* TfLiteFloatArrayCreate(int size) {
   return TfLiteVarArrayCreate<TfLiteFloatArray>(size);

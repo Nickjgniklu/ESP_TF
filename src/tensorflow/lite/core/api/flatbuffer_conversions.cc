@@ -157,7 +157,7 @@ TfLiteRngAlgorithm ConvertRngAlgorithm(RngAlgorithm algorithm) {
   return kTfLiteRngAlgorithmUnknown;
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 TfLiteStatus ParseOpDataTfLite(const Operator* op, BuiltinOperator op_type,
                                ErrorReporter* error_reporter,
                                BuiltinDataAllocator* allocator,
@@ -2890,6 +2890,7 @@ TfLiteStatus ParseOpData(const Operator* op, BuiltinOperator op_type,
 //  * If all the builtin operators were to have their own parse functions, or we
 //    were ok with some amount of code duplication, then this split of the .cc
 //    files would be a lot more feasible.
+#define TF_LITE_STATIC_MEMORY
 #ifdef TF_LITE_STATIC_MEMORY
   TF_LITE_REPORT_ERROR(
       error_reporter,

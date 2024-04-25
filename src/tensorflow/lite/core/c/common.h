@@ -126,7 +126,7 @@ typedef struct TfLiteIntArray {
 /// in bytes.
 size_t TfLiteIntArrayGetSizeInBytes(int size);
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 /// Create a array of a given `size` (uninitialized entries).
 /// This returns a pointer, that you must free using TfLiteIntArrayFree().
 TfLiteIntArray* TfLiteIntArrayCreate(int size);
@@ -139,7 +139,7 @@ int TfLiteIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b);
 int TfLiteIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
                               const int b_data[]);
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 /// Create a copy of an array passed as `src`.
 /// You are expected to free memory with TfLiteIntArrayFree
 TfLiteIntArray* TfLiteIntArrayCopy(const TfLiteIntArray* src);
@@ -170,7 +170,7 @@ typedef struct TfLiteFloatArray {
 /// size in bytes.
 int TfLiteFloatArrayGetSizeInBytes(int size);
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 /// Create a array of a given `size` (uninitialized entries).
 /// This returns a pointer, that you must free using TfLiteFloatArrayFree().
 TfLiteFloatArray* TfLiteFloatArrayCreate(int size);
@@ -474,7 +474,7 @@ typedef enum TfLiteCustomAllocationFlags {
 
 /// A tensor in the interpreter system which is a wrapper around a buffer of
 /// data including a dimensionality (or NULL if not currently defined).
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 typedef struct TfLiteTensor {
   /// The data type specification for data stored in `data`. This affects
   /// what member of `data` union should be used.
@@ -692,7 +692,7 @@ typedef struct TfLiteEvalTensor {
   TfLiteType type;
 } TfLiteEvalTensor;
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 /// Free data memory of tensor `t`.
 void TfLiteTensorDataFree(TfLiteTensor* t);
 
@@ -1410,7 +1410,7 @@ typedef struct TfLiteOpaqueDelegateBuilder {
   int64_t flags;
 } TfLiteOpaqueDelegateBuilder;
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 // See c_api_opaque.h.
 // This declaration in common.h is only for backwards compatibility.
 // NOTE: This function is part of the TensorFlow Lite Extension APIs, see above.

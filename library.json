@@ -1,0 +1,8 @@
+{
+    "name": "ESP_TF",
+    "version": "2.0.0",
+    "build": {
+      "srcDir": "src",
+      "includeDir": "src"
+    }
+  }

@@ -26,8 +26,6 @@ find ./src/tensorflow/ ./src/signal/ -type f -exec sed -i -e 's/#include "tools\
 echo "Use esp-nn kernals"
 #replace standard kernals with esp nn
 cp -a ./src/tensorflow/lite/micro/kernels/esp_nn/. ./src/tensorflow/lite/micro/kernels/
-#add ESP_NN define
-sed -i 's/#define TENSORFLOW_LITE_C_COMMON_H_/#define TENSORFLOW_LITE_C_COMMON_H_\n#define ESP_NN 1/g' ./src/tensorflow/lite/c/common.h
 
 echo "Making esp-nn files structured for PIO/Arduino"
 git clone --recurse-submodules https://github.com/espressif/esp-nn.git
@@ -48,8 +46,28 @@ find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <esp_nn_defs.h>/#include 
 find ./src/tensorflow/ -type f -exec sed -i -e 's/#include <esp_nn.h>/#include "esp-nn\/esp_nn.h"/g' {} \;
 find ./src/esp-nn/ -type f -iname "*esp32s3.S" -exec sed -i '1s/^/#ifdef ARCH_ESP32_S3\n/;$a\\n#endif' {} \;
 
-echo "Clean up"
+# ESP32 requires TF_LITE_REMOVE_VIRTUAL_DELETE descrutors to be made public
+sed -i '/TF_LITE_REMOVE_VIRTUAL_DELETE/d' ./src/tensorflow/lite/micro/memory_planner/linear_memory_planner.h
+sed -i '/TF_LITE_REMOVE_VIRTUAL_DELETE/d' ./src/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+sed -i '/TF_LITE_REMOVE_VIRTUAL_DELETE/d' ./src/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+
+sed -i 's/private:/TF_LITE_REMOVE_VIRTUAL_DELETE\n&/' ./src/tensorflow/lite/micro/memory_planner/linear_memory_planner.h
+sed -i 's/private:/TF_LITE_REMOVE_VIRTUAL_DELETE\n&/' ./src/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+sed -i 's/private:/TF_LITE_REMOVE_VIRTUAL_DELETE\n&/' ./src/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+# change all occurance of #ifndef TF_LITE_STATIC_MEMORY to #ifdef TF_LITE_NOT_STATIC_MEMORY
+find ./src/ -type f -exec sed -i -e 's/#ifndef TF_LITE_STATIC_MEMORY/#ifdef TF_LITE_NOT_STATIC_MEMORY/g' {} \;
+find ./src/ -type f -exec sed -i -e 's/#if !defined(TF_LITE_STATIC_MEMORY)/#if defined(TF_LITE_NOT_STATIC_MEMORY)/g' {} \;
+find ./src/ -type f -exec sed -i -e 's/#ifdef TF_LITE_STATIC_MEMORY/#define TF_LITE_STATIC_MEMORY\n#ifdef TF_LITE_STATIC_MEMORY/g' {} \;
+
+
+
+
+# Create header file for library
+echo "// do not delete" > ./src/ESP_TF.h
+echo "// placeholder for arduino library rules" >> ./src/ESP_TF.h
+
 #clean up 
+echo "Clean up"
 rm -fr esp-tflite-micro
 rm -fr esp-nn
 

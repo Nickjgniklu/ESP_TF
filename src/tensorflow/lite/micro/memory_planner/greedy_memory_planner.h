@@ -111,10 +111,9 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
   // after invocation. Do to the fact that tensors that tensor data for tensors
   // that aren't being used during a phase of invocation are overwritten.
   bool preserves_all_tensors() const override { return false; }
-  TF_LITE_REMOVE_VIRTUAL_DELETE
 
-
- private:
+ TF_LITE_REMOVE_VIRTUAL_DELETE
+private:
   // Whether a buffer is active in a given time range.
   bool DoesEntryOverlapInTime(const ListEntry* entry, const int first_time_used,
                               const int last_time_used) const;

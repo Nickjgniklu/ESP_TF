@@ -65,7 +65,7 @@ limitations under the License.
 #define TFLITE_HAS_ATTRIBUTE_WEAK 0
 #endif
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifdef TF_LITE_NOT_STATIC_MEMORY
 // maximum size of a valid flatbuffer
 inline constexpr unsigned int flatbuffer_size_max = 2147483648;
 // If none zero then the buffer is stored outside of the flatbuffers, string

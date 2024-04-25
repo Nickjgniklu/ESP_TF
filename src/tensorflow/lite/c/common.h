@@ -27,7 +27,6 @@ limitations under the License.
 
 #ifndef TENSORFLOW_LITE_C_COMMON_H_
 #define TENSORFLOW_LITE_C_COMMON_H_
-#define ESP_NN 1
 
 #include "tensorflow/lite/core/c/common.h"
 
