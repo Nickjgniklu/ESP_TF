@@ -1,3 +1,4 @@
+#ifdef ARCH_ESP32_S3
 // Copyright 2020-2021 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -541,3 +542,5 @@ void esp_nn_depthwise_conv_s8_esp32s3(const data_dims_t *input_dims,
                                           out_mult, activation_min, activation_max);
     }
 }
+
+#endif

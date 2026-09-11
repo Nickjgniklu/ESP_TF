@@ -44,7 +44,12 @@ find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <common_functions.h>/#inc
 find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <esp_nn_defs.h>/#include "esp_nn_defs.h"/g' {} \;
 #find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <esp_nn.h>/#include "esp_nn.h"/g' {} \;
 find ./src/tensorflow/ -type f -exec sed -i -e 's/#include <esp_nn.h>/#include "esp-nn\/esp_nn.h"/g' {} \;
-find ./src/esp-nn/ -type f -iname "*esp32s3.S" -exec sed -i '1s/^/#ifdef ARCH_ESP32_S3\n/;$a\\n#endif' {} \;
+# Guard all ESP32-S3 specific sources behind ARCH_ESP32_S3.
+# The .c files must be guarded as well as the .S files: they reference the
+# assembly symbols unconditionally, and Arduino links library objects directly
+# rather than via an archive, so an unguarded .c is always pulled into the link
+# and fails with "undefined reference" when the .S bodies are preprocessed away.
+find ./src/esp-nn/ -type f \( -iname "*esp32s3.S" -o -iname "*esp32s3.c" \) -exec sed -i '1s/^/#ifdef ARCH_ESP32_S3\n/;$a\\n#endif' {} \;
 
 # ESP32 requires TF_LITE_REMOVE_VIRTUAL_DELETE descrutors to be made public
 sed -i '/TF_LITE_REMOVE_VIRTUAL_DELETE/d' ./src/tensorflow/lite/micro/memory_planner/linear_memory_planner.h
