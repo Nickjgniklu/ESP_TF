@@ -26,6 +26,21 @@ find ./src/tensorflow/ ./src/signal/ -type f -exec sed -i -e 's/#include "tools\
 echo "Use esp-nn kernals"
 #replace standard kernals with esp nn
 cp -a ./src/tensorflow/lite/micro/kernels/esp_nn/. ./src/tensorflow/lite/micro/kernels/
+# Drop the esp_nn/ originals now that they have been copied over the standard
+# kernels. Leaving them in place compiles every kernel twice and both copies
+# define the same symbols (Register_CONV_2D, mul_total_time, ...). PlatformIO
+# archives the library so the duplicate is simply never extracted, but Arduino
+# links every library object directly and fails with "multiple definition".
+rm -r ./src/tensorflow/lite/micro/kernels/esp_nn/
+
+# The esp-nn kernels mix designated and positional initializers, e.g.
+#   data_dims_t d = {.width = w, .height = h, .channels = c, 1};
+# GCC allows that as an extension under -std=gnu++17, which is why PlatformIO
+# builds fine, but it is an error in C++20 and the arduino-esp32 core compiles
+# at -std=gnu++2b. Name the trailing fields so the library builds under both.
+find ./src/tensorflow/lite/micro/kernels/ -maxdepth 1 -name "*.cc" -exec sed -i \
+  -e 's/\(\.channels = [^,]*\), 1$/\1, .extra = 1/' \
+  -e 's/\(\.height = [^,]*\), 0, 0}/\1, .channels = 0, .extra = 0}/' {} \;
 
 echo "Making esp-nn files structured for PIO/Arduino"
 git clone --recurse-submodules https://github.com/espressif/esp-nn.git
@@ -45,10 +60,10 @@ find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <esp_nn_defs.h>/#include 
 #find ./src/esp-nn/ -type f -exec sed -i -e 's/#include <esp_nn.h>/#include "esp_nn.h"/g' {} \;
 find ./src/tensorflow/ -type f -exec sed -i -e 's/#include <esp_nn.h>/#include "esp-nn\/esp_nn.h"/g' {} \;
 # Guard all ESP32-S3 specific sources behind ARCH_ESP32_S3.
-# The .c files must be guarded as well as the .S files: they reference the
-# assembly symbols unconditionally, and Arduino links library objects directly
-# rather than via an archive, so an unguarded .c is always pulled into the link
-# and fails with "undefined reference" when the .S bodies are preprocessed away.
+# The .c files are guarded as well as the .S files: they reference the assembly
+# symbols unconditionally, so on any build system that links library objects
+# directly instead of archiving them they would be pulled into the link and
+# fail with "undefined reference" once the .S bodies are preprocessed away.
 find ./src/esp-nn/ -type f \( -iname "*esp32s3.S" -o -iname "*esp32s3.c" \) -exec sed -i '1s/^/#ifdef ARCH_ESP32_S3\n/;$a\\n#endif' {} \;
 
 # ESP32 requires TF_LITE_REMOVE_VIRTUAL_DELETE descrutors to be made public

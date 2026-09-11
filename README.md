@@ -78,10 +78,20 @@ directives:
 ```
 
 Notes:
-- `-std=gnu++17` is not needed here; the arduino-esp32 core already selects a
-  suitable C++ standard.
+- `-std=gnu++17` is not needed; the library builds under the arduino-esp32
+  core's own `-std=gnu++2b`.
 - After creating or editing `build_opt.h`, do a clean rebuild so cached objects
   are recompiled with the new flags.
+
+### Verified builds
+
+Both configurations are built for `esp32:esp32:esp32s3` with arduino-cli and
+core `esp32:esp32@3.3.11` (xtensa-esp-elf gcc 14.2.0):
+
+| Flags | Result |
+|---|---|
+| none | builds |
+| `ESP_NN` + `CONFIG_NN_OPTIMIZED` + `ARCH_ESP32_S3` | builds, 18 ESP32-S3 assembly kernels linked in |
 
 ## TODO
 # Revalidate arduino versions
