@@ -1,4 +1,11 @@
 on: [push, pull_request]
+
+env:
+  # Pinned so CI reproduces the documented verification and cannot drift
+  # green/red on a toolchain change unrelated to the code under test.
+  ARDUINO_CLI_VERSION: 1.5.1
+  ESP32_PLATFORM_VERSION: 3.3.11
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -16,10 +23,20 @@ jobs:
       fail-fast: false
       matrix:
         config:
+          # As shipped: dot_a_linkage=true, so the library links as an archive.
           - name: default
             opts: ""
+            strip-linkage: false
           - name: esp-nn-s3
             opts: "-DESP_NN\n-DCONFIG_NN_OPTIMIZED\n-DARCH_ESP32_S3"
+            strip-linkage: false
+          # dot_a_linkage removed, so every library object is passed to the
+          # linker directly. This is the configuration that surfaced the
+          # duplicate-kernel and unguarded-S3-source failures; archive linking
+          # hides both, so without this job CI would not catch a regression.
+          - name: direct-link
+            opts: ""
+            strip-linkage: true
     steps:
       - uses: actions/checkout@v4
       # build_opt.h is how the arduino-esp32 core takes extra compiler flags;
@@ -27,11 +44,16 @@ jobs:
       - name: Set build flags
         if: matrix.config.opts != ''
         run: printf '%b\n' '${{ matrix.config.opts }}' > examples/HelloESP_TF/build_opt.h
+      - name: Force direct object linking
+        if: matrix.config.strip-linkage
+        run: sed -i '/^dot_a_linkage=/d' library.properties
       - uses: arduino/compile-sketches@v1
         with:
+          cli-version: ${{ env.ARDUINO_CLI_VERSION }}
           fqbn: esp32:esp32:esp32s3
           platforms: |
             - name: esp32:esp32
+              version: ${{ env.ESP32_PLATFORM_VERSION }}
               source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
           sketch-paths: |
             - examples/HelloESP_TF
