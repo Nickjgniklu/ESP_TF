@@ -1,0 +1,86 @@
+name: Release
+
+# Tags and publishes a release using the version already committed in
+# library.properties. Run it from the Actions tab after the version bump has
+# been merged to the default branch.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - validate the version and report what would be published, without tagging"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so existing tags are visible to the duplicate check.
+          fetch-depth: 0
+
+      - name: Refuse to release from a non-default branch
+        run: |
+          set -euo pipefail
+          default='${{ github.event.repository.default_branch }}'
+          if [ '${{ github.ref_name }}' != "$default" ]; then
+            echo "::error::Release must be run from $default, got ${{ github.ref_name }}"
+            exit 1
+          fi
+
+      - name: Read and validate version
+        id: v
+        run: |
+          set -euo pipefail
+          props=$(grep -E '^version=' library.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')
+          json=$(python3 -c "import json; print(json.load(open('library.json'))['version'])")
+          echo "library.properties: $props"
+          echo "library.json:       $json"
+          if [ -z "$props" ]; then
+            echo "::error::no version= line found in library.properties"
+            exit 1
+          fi
+          # Arduino Library Manager reads library.properties; PlatformIO reads
+          # library.json. A mismatch ships two different version numbers.
+          if [ "$props" != "$json" ]; then
+            echo "::error::version mismatch - library.properties=$props library.json=$json"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$props" >/dev/null; then
+            echo "::error::tag $props already exists; bump the version before releasing"
+            exit 1
+          fi
+          echo "version=$props" >> "$GITHUB_OUTPUT"
+
+      - name: Dry run summary
+        if: inputs.dry_run
+        run: |
+          {
+            echo "### Dry run - nothing was published"
+            echo ""
+            echo "Would tag \`${{ steps.v.outputs.version }}\` at commit \`${{ github.sha }}\` and create a GitHub Release."
+            echo ""
+            echo "Re-run with **dry_run** unchecked to publish."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create tag and GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$V" -m "ESP_TF $V"
+          git push origin "refs/tags/$V"
+          gh release create "$V" --title "ESP_TF $V" --generate-notes
+          {
+            echo "### Published $V"
+            echo ""
+            echo "Tag and release created at \`${{ github.sha }}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
