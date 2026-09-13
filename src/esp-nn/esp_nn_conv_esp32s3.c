@@ -1,3 +1,4 @@
+#ifdef ARCH_ESP32_S3
 /*
  * SPDX-FileCopyrightText: 2020-2023 Espressif Systems (Shanghai) CO LTD
  *
@@ -267,3 +268,5 @@ void esp_nn_conv_s8_esp32s3(const data_dims_t *input_dims,
             out_shift, out_mult, activation_min, activation_max, scratch_data);
     }
 }
+
+#endif
