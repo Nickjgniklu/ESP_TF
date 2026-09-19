@@ -3,13 +3,23 @@ name: Release
 # Tags and publishes a release using the version already committed in
 # library.properties. Run it from the Actions tab after the version bump has
 # been merged to the default branch.
+#
+# Arduino Library Manager finds releases by crawling the repo's git tags, so
+# tagging is all it needs. The PlatformIO registry does not crawl - a version
+# only appears there if `pio pkg publish` pushes it - so this workflow does
+# both, and the platformio-only mode exists to publish a tag that was created
+# before that step was added, or to retry a publish that failed.
 on:
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: "Preview only - validate the version and report what would be published, without tagging"
-        type: boolean
-        default: true
+      mode:
+        description: "What to do"
+        type: choice
+        default: dry-run
+        options:
+          - dry-run
+          - release
+          - platformio-only
 
 permissions:
   contents: write
@@ -34,6 +44,8 @@ jobs:
 
       - name: Read and validate version
         id: v
+        env:
+          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           props=$(grep -E '^version=' library.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')
@@ -51,24 +63,45 @@ jobs:
             exit 1
           fi
           if git rev-parse -q --verify "refs/tags/$props" >/dev/null; then
-            echo "::error::tag $props already exists; bump the version before releasing"
+            # platformio-only publishes an already-tagged version, so for that
+            # mode the tag existing is the precondition, not the error.
+            if [ "$MODE" != 'platformio-only' ]; then
+              echo "::error::tag $props already exists; bump the version before releasing"
+              exit 1
+            fi
+          elif [ "$MODE" = 'platformio-only' ]; then
+            echo "::error::tag $props does not exist; run mode=release first"
             exit 1
           fi
           echo "version=$props" >> "$GITHUB_OUTPUT"
 
+      - name: Check what the PlatformIO registry already has
+        id: pio
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          api='https://api.registry.platformio.org/v3/search?query=ESP_TF'
+          pick="import json,sys; i=json.load(sys.stdin).get('items') or []; print(next((p['version']['name'] for p in i if p['owner']['username']=='nickjgniklu' and p['name']=='ESP_TF'), 'none'))"
+          published=$(curl -sf "$api" | python3 -c "$pick") || published='unknown'
+          echo "registry has: $published (releasing $V)"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
       - name: Dry run summary
-        if: inputs.dry_run
+        if: inputs.mode == 'dry-run'
         run: |
           {
             echo "### Dry run - nothing was published"
             echo ""
-            echo "Would tag \`${{ steps.v.outputs.version }}\` at commit \`${{ github.sha }}\` and create a GitHub Release."
+            echo "Would tag \`${{ steps.v.outputs.version }}\` at commit \`${{ github.sha }}\`, create a GitHub Release, and publish to the PlatformIO registry."
             echo ""
-            echo "Re-run with **dry_run** unchecked to publish."
+            echo "PlatformIO registry currently has \`${{ steps.pio.outputs.published }}\`."
+            echo ""
+            echo "Re-run with **mode: release** to publish."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create tag and GitHub Release
-        if: ${{ !inputs.dry_run }}
+        if: inputs.mode == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           V: ${{ steps.v.outputs.version }}
@@ -79,8 +112,50 @@ jobs:
           git tag -a "$V" -m "ESP_TF $V"
           git push origin "refs/tags/$V"
           gh release create "$V" --title "ESP_TF $V" --generate-notes
+
+      - name: Check out the tag
+        if: inputs.mode == 'platformio-only'
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Publish the tree that was actually released, not whatever main has
+          # drifted to since.
+          git checkout --detach "refs/tags/$V"
+
+      - uses: actions/setup-python@v5
+        if: inputs.mode != 'dry-run'
+        with:
+          python-version: '3.x'
+
+      - name: Publish to the PlatformIO registry
+        if: inputs.mode != 'dry-run'
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PLATFORMIO_AUTH_TOKEN:-}" ]; then
+            echo "::error::PLATFORMIO_AUTH_TOKEN secret is not set; create one with 'pio account token' and add it under Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          pip install --quiet platformio
+          # --owner is pinned rather than derived from the token so a publish
+          # can never land under a different account than the existing package.
+          pio pkg publish --owner nickjgniklu --no-interactive --no-notify
+
+      - name: Summary
+        if: inputs.mode != 'dry-run'
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
           {
             echo "### Published $V"
             echo ""
-            echo "Tag and release created at \`${{ github.sha }}\`."
+            if [ '${{ inputs.mode }}' = 'release' ]; then
+              echo "Tag and GitHub Release created at \`${{ github.sha }}\`."
+            fi
+            echo "Pushed to the PlatformIO registry (was \`${{ steps.pio.outputs.published }}\`)."
+            echo ""
+            echo "Arduino Library Manager picks the tag up on its own crawl - allow a few hours, and note that docs.arduino.cc lags the index further."
           } >> "$GITHUB_STEP_SUMMARY"
