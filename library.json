@@ -1,6 +1,6 @@
 {
   "name": "ESP_TF",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "TensorFlow Lite for Microcontrollers on the ESP32, with Espressif's ESP-NN optimized kernels. Restructures espressif/tflite-micro-esp-examples into a library the Arduino IDE and PlatformIO can build directly.",
   "keywords": "tensorflow, tflite, tflite-micro, machine-learning, inference, esp32, esp-nn",
   "homepage": "https://github.com/Nickjgniklu/ESP_TF",
