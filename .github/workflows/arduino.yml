@@ -18,7 +18,7 @@ jobs:
 
   compile:
     name: compile (${{ matrix.config.name }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -39,12 +39,6 @@ jobs:
             strip-linkage: true
     steps:
       - uses: actions/checkout@v4
-      # Pin Python to a version available on every GitHub-hosted runner image.
-      # compile-sketches otherwise selects its bundled Python version, which
-      # can be newer than the runner's setup-python manifest supports.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       # build_opt.h is how the arduino-esp32 core takes extra compiler flags;
       # it is passed as a response file to the c, cpp and S recipes alike.
       - name: Set build flags
@@ -56,9 +50,6 @@ jobs:
       - uses: arduino/compile-sketches@v1
         with:
           cli-version: ${{ env.ARDUINO_CLI_VERSION }}
-          # Prevent the action from selecting its bundled Python 3.12.4, which
-          # is unavailable on the current Ubuntu 26.04 runner image.
-          python-version: '3.12'
           fqbn: esp32:esp32:esp32s3
           platforms: |
             - name: esp32:esp32
