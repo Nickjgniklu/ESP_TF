@@ -39,6 +39,12 @@ jobs:
             strip-linkage: true
     steps:
       - uses: actions/checkout@v4
+      # Pin Python to a version available on every GitHub-hosted runner image.
+      # compile-sketches otherwise selects its bundled Python version, which
+      # can be newer than the runner's setup-python manifest supports.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       # build_opt.h is how the arduino-esp32 core takes extra compiler flags;
       # it is passed as a response file to the c, cpp and S recipes alike.
       - name: Set build flags
