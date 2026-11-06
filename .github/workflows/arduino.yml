@@ -56,6 +56,9 @@ jobs:
       - uses: arduino/compile-sketches@v1
         with:
           cli-version: ${{ env.ARDUINO_CLI_VERSION }}
+          # Prevent the action from selecting its bundled Python 3.12.4, which
+          # is unavailable on the current Ubuntu 26.04 runner image.
+          python-version: '3.12'
           fqbn: esp32:esp32:esp32s3
           platforms: |
             - name: esp32:esp32
